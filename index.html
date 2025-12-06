@@ -1,8 +1,158 @@
-<html>
-  <head>
-    <title>my page</title>
-  </head>
-  <body>
-    <h1>Hello world!</h1>
-  </body>
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login • Example</title>
+  <style>
+    :root{
+      --bg:#f3f6ff;
+      --card:#ffffff;
+      --accent1:#6c5ce7;
+      --accent2:#00bcd4;
+      --muted:#6b7280;
+      --radius:14px;
+      --glass: rgba(255,255,255,0.6);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(108,92,231,0.08), transparent),
+                  radial-gradient(900px 400px at 90% 90%, rgba(0,188,212,0.06), transparent),
+                  var(--bg);
+      color:#111827;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+    }
+
+    .card{
+      width:100%;
+      max-width:420px;
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:0 10px 30px rgba(16,24,40,0.08);
+      padding:28px;
+      backdrop-filter: blur(6px);
+      border:1px solid rgba(15,23,42,0.04);
+    }
+
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent1),var(--accent2));
+      display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:700
+    }
+    h1{font-size:20px;margin:0 0 6px}
+    p.lead{margin:0 0 18px;color:var(--muted);font-size:14px}
+
+    form{display:block}
+    .field{margin-bottom:14px}
+    label{display:block;font-size:13px;margin-bottom:6px;color:var(--muted)}
+    input[type="text"], input[type="email"], input[type="password"]{
+      width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);
+      background:linear-gradient(180deg,transparent,rgba(0,0,0,0.01));font-size:15px;outline:none;
+      transition:box-shadow .15s, border-color .15s;
+    }
+    input:focus{box-shadow:0 6px 20px rgba(99,102,241,0.08);border-color:rgba(99,102,241,0.25)}
+
+    .password-row{position:relative}
+    .toggle-pw{
+      position:absolute;right:8px;top:50%;transform:translateY(-50%);
+      background:none;border:0;padding:6px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted)
+    }
+
+    .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .checkbox{display:flex;align-items:center;gap:8px}
+    .checkbox input{width:16px;height:16px}
+
+    button.submit{
+      width:100%;padding:12px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent1),var(--accent2));
+      color:white;font-weight:600;font-size:15px;cursor:pointer;box-shadow:0 8px 20px rgba(99,102,241,0.12);
+    }
+    .help{font-size:13px;color:var(--muted);text-align:center;margin-top:12px}
+    .or{display:flex;align-items:center;gap:12px;margin:18px 0}
+    .or div{height:1px;background:rgba(15,23,42,0.04);flex:1}
+    .small-btn{background:transparent;border:1px solid rgba(15,23,42,0.06);padding:10px;border-radius:10px;cursor:pointer}
+
+    @media (max-width:480px){
+      .card{padding:20px;border-radius:12px}
+      .logo{width:40px;height:40px}
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <div class="brand">
+      <div class="logo">JS</div>
+      <div>
+        <h1>Welcome back</h1>
+        <p class="lead">Sign in to continue to your account</p>
+      </div>
+    </div>
+
+    <form id="loginForm" autocomplete="on" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="you@example.com" required />
+      </div>
+
+      <div class="field password-row">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Enter your password" minlength="6" required />
+        <button type="button" class="toggle-pw" aria-label="Show password" id="togglePw">Show</button>
+      </div>
+
+      <div class="row">
+        <label class="checkbox"><input type="checkbox" id="remember" name="remember" /> <span>Remember me</span></label>
+        <a href="#" style="color:var(--accent1);text-decoration:none;font-size:13px">Forgot?</a>
+      </div>
+
+      <button class="submit" type="submit">Sign in</button>
+
+      <div class="or"><div></div><div style="font-size:13px;color:var(--muted)">or</div><div></div></div>
+
+      <button type="button" class="small-btn" style="width:100%">Continue with Google</button>
+
+      <p class="help">Don't have an account? <a href="#" style="color:var(--accent1);text-decoration:none">Create one</a></p>
+    </form>
+  </main>
+
+  <script>
+    (function(){
+      const pw = document.getElementById('password');
+      const toggle = document.getElementById('togglePw');
+      toggle.addEventListener('click', ()=>{
+        const isPwd = pw.type === 'password';
+        pw.type = isPwd ? 'text' : 'password';
+        toggle.textContent = isPwd ? 'Hide' : 'Show';
+        toggle.setAttribute('aria-pressed', String(isPwd));
+      });
+
+      const form = document.getElementById('loginForm');
+      form.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        // simple client-side validation
+        if(!form.checkValidity()){
+          // find first invalid element and focus it
+          const invalid = form.querySelector(':invalid');
+          if(invalid) invalid.focus();
+          return;
+        }
+        // Replace this with real auth call
+        const data = {email:form.email.value, password:form.password.value, remember:form.remember.checked};
+        alert('Form submitted (demo)\n' + JSON.stringify(data,null,2));
+      });
+    })();
+  </script>
+</body>
 </html>
