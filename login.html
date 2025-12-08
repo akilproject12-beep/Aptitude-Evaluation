@@ -26,7 +26,6 @@ firebase.initializeApp(firebaseConfig);
 <!-- External Script -->
 <script defer src="script.js"></script>
 
-
 <!-- Modern Stylish CSS -->
 <style>
 * {
@@ -54,7 +53,7 @@ body {
 
 
 .content {
-    width: 380px;
+    width: 385px;
     background: rgba(255, 255, 255, 0.15);
     padding: 50px;
     margin-top: 20px;
@@ -64,6 +63,7 @@ body {
     animation: fadeIn 0.8s ease-out;
     background: #ddd;position:fixed;transition: 0.5s;}
 .content:hover{
+    width: 390px;
     box-shadow: 0 8px 32px #000;
     border:2px solid blue;
     transition: 0.5s;}
@@ -137,14 +137,13 @@ input::placeholder {
 <div class="content">
 <div class="form" id="regform">
 <form method="POST" id="RegisterForm">
-<h2>Create Your Account</h2><hr><br>
-<input type="text" id="name" name="name" placeholder="Enter Name" required>
+<h2>Login as Existing User</h2><hr><br>
 <input type="email" id="email" name="email" placeholder="Enter Email" required>
 <input type="password" id="pass" name="pass" placeholder="Enter Password" required><br><br><br><hr>
-<button class="btnn" type="button" id="Register">Register</button>
+<button class="btnn" type="button" id="Login">Login</button>
 <div class="link">
-<span>Already have an account?</span>
-<a href="login.html">Login</a>
+<span>New User?:</span>
+<a href="index.html">Register</a>
 </div>
 </form>
 <div class="alert" id="alert"></div>
