@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Faculty Question Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<style>
+:root{
+  --bg:#000; --panel:#141414; --border:#2a2a2a;
+  --text:#fff; --muted:#b3b3b3; --accent:#00bfff; --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+body{
+  background:linear-gradient(180deg,#000,#0b0b0b);
+  color:var(--text);
+  display:grid;
+  grid-template-columns:240px 1fr;
+  min-height:100vh;
+}
+/* Sidebar */
+.sidebar{background:var(--panel);padding:30px 20px;border-right:1px solid var(--border);}
+.brand{font-size:22px;font-weight:800;color:var(--accent);margin-bottom:30px;}
+.nav a{display:block;padding:14px;border-radius:10px;color:var(--muted);text-decoration:none;margin-bottom:10px;cursor:pointer;}
+.nav a.active, .nav a:hover{background:#1f1f1f;color:#fff;}
+/* Main */
+.main{padding:40px;}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;}
+.action-btn{background:var(--accent);border:none;padding:10px 18px;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;}
+.table-wrapper{display:grid;gap:20px;}
+.table-row{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.options{margin-top:10px;} .options div{margin-top:5px;}
+.drawer{position:fixed;top:0;right:-550px;width:550px;height:100%;background:#111;border-left:1px solid var(--border);padding:40px 30px;transition:.4s;overflow:auto;}
+.drawer.open{right:0;}
+.drawer input, .drawer textarea{width:100%;padding:10px;margin:8px 0 18px;border-radius:8px;border:1px solid var(--border);background:#0f0f0f;color:#fff;}
+.drawer textarea{resize:vertical;font-family:Consolas,monospace;}
+.drawer-actions{display:flex;gap:10px;}
+.save, .cancel{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;}
+.save{background:var(--accent);} .cancel{background:#333;color:#fff;}
+</style>
+</head>
+
+<body>
+
+<aside class="sidebar">
+  <div class="brand">FACULTY•CORE</div>
+  <nav class="nav">
+    <a onclick="switchCategory('problemsolvingquestions', this)" class="active">🧠 Problem Solving</a>
+    <a onclick="switchCategory('logicalreasoningquestions', this)">🔍 Logical Reasoning</a>
+    <a onclick="switchCategory('timeandworkquestions', this)">⏱ Time & Work</a>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="header">
+    <h1 id="pageTitle">Problem Solving Questions</h1>
+    <button class="action-btn" onclick="openDrawerNew()">+ Add Question</button>
+  </div>
+  <div class="table-wrapper" id="list"></div>
+</main>
+
+<div class="drawer" id="drawer">
+  <h2 id="drawer-title">Add Question</h2>
+
+  <textarea id="d_question" rows="5" placeholder="Enter Question"></textarea>
+  <input id="d_option1" placeholder="Option 1">
+  <input id="d_option2" placeholder="Option 2">
+  <input id="d_option3" placeholder="Option 3">
+  <input id="d_option4" placeholder="Option 4">
+
+  <select id="d_correct">
+    <option value="Option1">Option1</option>
+    <option value="Option2">Option2</option>
+    <option value="Option3">Option3</option>
+    <option value="Option4">Option4</option>
+  </select>
+
+  <div class="drawer-actions">
+    <button class="save" onclick="save()">Save</button>
+    <button class="cancel" onclick="closeDrawer()">Cancel</button>
+  </div>
+</div>
+
+<script>
+// Supabase client
+const supabase1 = supabase.createClient(
+  'https://yqfhvvjsybbjwldjsjga.supabase.co',
+  'sb_publishable_hK0s7eE3P1ILoADp-VQ7JQ_FVE5_ixT'
+);
+
+let currentTable = "problemsolvingquestions";
+let questions = [];
+let currentId = null;
+let isNew = false;
+
+// Switch between question categories
+function switchCategory(table, element){
+  currentTable = table;
+  document.querySelectorAll(".nav a").forEach(a=>a.classList.remove("active"));
+  element.classList.add("active");
+  document.getElementById("pageTitle").innerText =
+    table.replace("questions","").replace(/([a-z])([A-Z])/g,'$1 $2');
+  fetchData();
+}
+
+// Fetch questions from Supabase
+async function fetchData(){
+  const { data, error } = await supabase1.from(currentTable).select('*');
+  if(error){
+    console.error("Supabase Error:", error.message);
+    questions = [];
+    render();
+    return;
+  }
+  questions = data || [];
+  render();
+}
+
+// Render questions list
+function render(){
+  const list = document.getElementById("list");
+  if(!questions || questions.length===0){
+    list.innerHTML="<p>No questions found.</p>";
+    return;
+  }
+  let html="";
+  questions.forEach(q=>{
+    html+=`
+    <div class="table-row">
+      <strong>${q.question}</strong>
+      <div class="options">
+        <div>1️⃣ ${q.option1}</div>
+        <div>2️⃣ ${q.option2}</div>
+        <div>3️⃣ ${q.option3}</div>
+        <div>4️⃣ ${q.option4}</div>
+      </div>
+      <div style="margin-top:10px;color:#00ff99;">Correct: ${q.correctoption}</div>
+      <div style="margin-top:10px;margin-top:10px;">
+        <button class="action-btn" onclick="edit('${q.id}')">Edit</button>
+        <button class="action-btn" style="background:#ff3333;" onclick="del('${q.id}')">Delete</button>
+      </div>
+    </div>`;
+  });
+  list.innerHTML=html;
+}
+
+// Open drawer for new question
+function openDrawerNew(){
+  isNew=true;
+  currentId=null;
+  d_question.value="";
+  d_option1.value="";
+  d_option2.value="";
+  d_option3.value="";
+  d_option4.value="";
+  d_correct.value="Option1";
+  drawer.classList.add("open");
+}
+
+// Edit question
+function edit(id){
+  const q = questions.find(x=>x.id==id);
+  if(!q) return;
+  isNew=false;
+  currentId=id;
+  d_question.value=q.question;
+  d_option1.value=q.option1;
+  d_option2.value=q.option2;
+  d_option3.value=q.option3;
+  d_option4.value=q.option4;
+  d_correct.value=q.correctoption;
+  drawer.classList.add("open");
+}
+
+// Save new or updated question
+async function save(){
+  const payload={
+    question:d_question.value,
+    option1:d_option1.value,
+    option2:d_option2.value,
+    option3:d_option3.value,
+    option4:d_option4.value,
+    correctoption:d_correct.value  // Must be Option1-Option4
+  };
+
+  let res;
+  if(isNew){
+    res = await supabase1.from(currentTable).insert([payload]);
+  }else{
+    res = await supabase1.from(currentTable).update(payload).eq('id',currentId);
+  }
+
+  if(res.error){
+    console.error("Supabase Error:", res.error.message);
+    alert("Error: "+res.error.message);
+  }else{
+    closeDrawer();
+    fetchData();
+  }
+}
+
+// Delete question
+async function del(id){
+  if(!confirm("Delete this question?")) return;
+  const { error } = await supabase1.from(currentTable).delete().eq('id',id);
+  if(error) console.error("Supabase Error:", error.message);
+  fetchData();
+}
+
+// Close drawer
+function closeDrawer(){
+  drawer.classList.remove("open");
+}
+
+// Initial load
+fetchData();
+</script>
+
+</body>
+</html>
