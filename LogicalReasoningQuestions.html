@@ -2,68 +2,381 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Problem Solving Test</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Logical Reasoning Test</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body{background:#000;color:#fff;font-family:Segoe UI;padding:30px}
-.card{background:#141414;padding:20px;margin-bottom:15px;border-radius:10px}
-button{padding:10px 15px;background:#00bfff;border:none;color:#fff;border-radius:5px}
+body{
+background:#000;
+color:#fff;
+font-family:Segoe UI;
+margin:0;
+}
+.no-select{ user-select:none; }
+.container{ max-width:1000px;margin:auto;padding:20px; }
+.start-center{
+display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;
+}
+input{
+padding:12px;border-radius:6px;border:none;margin-top:10px;width:260px;font-size:16px;
+}
+.card{ background:#141414;padding:25px;margin-top:20px;border-radius:12px; }
+button{
+padding:12px 18px;background:#00bfff;border:none;color:#fff;border-radius:6px;
+margin-top:15px;cursor:pointer;font-size:16px;
+}
+button:disabled{background:#555}
+#timer{ font-size:20px;color:#00ff99;text-align:center;margin-top:15px; }
+
+.number-panel{
+display:flex;overflow-x:auto;gap:8px;padding:10px 0;margin-top:20px;
+border-bottom:1px solid #333;position:sticky;top:0;background:#000;
+z-index:1000;scroll-behavior:smooth;
+}
+.number-box{
+min-width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+background:#222;border-radius:6px;cursor:pointer;font-weight:bold;flex-shrink:0;
+}
+.number-box.active{ border:2px solid #00bfff; }
+.number-box.answered{ background:#00aa55;color:#fff; }
+
+.navigation{ display:flex;justify-content:space-between;margin-top:20px; }
+.submit-section{ text-align:center;margin-top:30px; }
+
+.dashboard{
+background:#000;padding:40px;text-align:center;min-height:1120px;
+}
+
+#resultBox{
+ width: 200mm;
+ min-height: 270mm;
+ margin: auto;
+ padding: 25mm 20mm;
+ box-sizing: border-box;
+ background:#000 !important;
+ color:#fff !important;
+ text-align:center;
+}
+
+.chart-container{
+width:260px;height:260px;margin:20px auto;
+}
+
+.option-label{
+display:block;background:#1e1e1e;padding:12px;margin:12px 0;
+border-radius:8px;cursor:pointer;
+}
+
+.watermark{
+margin-top:60px;padding-top:30px;border-top:1px solid #333;
+font-size:15px;opacity:0.9;
+}
+.watermark strong{
+display:block;margin-top:8px;font-size:17px;
+}
+
+@media print{
+button{ display:none !important; }
+}
 </style>
 </head>
+
 <body>
 
-<h1>🧠 Logical Reasoning Test</h1>
-<input type="text" id="name" placeholder="Student Name">
-<button onclick="loadQuestions()">Start Test</button>
+<div id="startPage" class="start-center">
+  <div>
+    <h1>🔍 Logical Reasoning Test</h1>
+    <input type="text" id="name" placeholder="Enter Student Name"><br>
+    <input type="text" id="rollno" placeholder="Enter Roll Number"><br>
+    <button onclick="startTest()">Start Test</button>
+  </div>
+</div>
 
+<div class="container">
+<div id="timer"></div>
+<div id="numberPanel" class="number-panel" style="display:none;"></div>
 <div id="questions"></div>
-<button id="submitBtn" style="display:none;" onclick="submitTest()">Submit</button>
 
-<h2 id="result"></h2>
+<div id="navigation" class="navigation" style="display:none;">
+  <button id="prevBtn" onclick="previousQuestion()">Previous</button>
+  <button id="nextBtn" onclick="nextQuestion()">Next</button>
+</div>
+
+<div id="submitSection" class="submit-section" style="display:none;">
+  <button onclick="submitTest()">Submit Test</button>
+</div>
+
+<div id="dashboard"></div>
+</div>
 
 <script>
+
 const supabase1 = supabase.createClient(
-    'https://yqfhvvjsybbjwldjsjga.supabase.co',
-    'sb_publishable_hK0s7eE3P1ILoADp-VQ7JQ_FVE5_ixT'
+'https://yqfhvvjsybbjwldjsjga.supabase.co',
+'sb_publishable_hK0s7eE3P1ILoADp-VQ7JQ_FVE5_ixT'
 );
 
 let questions=[];
+let currentQuestionIndex=0;
+let userAnswers=[];
+let timeLeft=0;
+let timerInterval;
+let studentName="";
+let rollNumber="";
+let resultChart=null;
+let testActive=false;
 
-async function loadQuestions(){
+async function startTest(){
+
+ studentName=document.getElementById("name").value.trim();
+ rollNumber=document.getElementById("rollno").value.trim();
+
+ if(studentName===""){ alert("Enter Name"); return; }
+
+ const rollPattern=/^[0-9]{3}[a-zA-Z]{2}[0-9]{3}$/;
+ if(!rollPattern.test(rollNumber)){
+   alert("Enter Valid Roll Number");
+   return;
+ }
+
+ document.body.classList.add("no-select");
+ document.getElementById("startPage").style.display="none";
+
  const { data } = await supabase1
    .from('logicalreasoningquestions')
    .select('*');
 
- questions = data;
- render();
- document.getElementById("submitBtn").style.display="block";
+ questions=data;
+ userAnswers=new Array(questions.length).fill(null);
+
+ timeLeft=questions.length*30;
+ currentQuestionIndex=0;
+ testActive=true;
+
+ document.getElementById("navigation").style.display="flex";
+ document.getElementById("numberPanel").style.display="flex";
+
+ generateNumberPanel();
+ renderQuestion();
+ startTimer();
 }
 
-function render(){
- let html="";
- questions.forEach((q,i)=>{
-   html+=`
-   <div class="card">
-   <p><b>Q${i+1}:</b> ${q.question}</p>
-   <label><input type="radio" name="q${i}" value="Option1"> ${q.option1}</label><br>
-   <label><input type="radio" name="q${i}" value="Option2"> ${q.option2}</label><br>
-   <label><input type="radio" name="q${i}" value="Option3"> ${q.option3}</label><br>
-   <label><input type="radio" name="q${i}" value="Option4"> ${q.option4}</label>
-   </div>`;
+document.addEventListener("visibilitychange", function() {
+ if (document.hidden && testActive) {
+   alert("Tab Changed! Test Auto Submitted.");
+   submitTest();
+ }
+});
+
+function generateNumberPanel(){
+ let panel=document.getElementById("numberPanel");
+ panel.innerHTML="";
+ for(let i=0;i<questions.length;i++){
+   let box=document.createElement("div");
+   box.className="number-box";
+   box.innerText=i+1;
+   box.onclick=()=>{currentQuestionIndex=i; renderQuestion();};
+   panel.appendChild(box);
+ }
+ updateNumberPanel();
+}
+
+function updateNumberPanel(){
+ let boxes=document.querySelectorAll(".number-box");
+
+ boxes.forEach((box,i)=>{
+   box.classList.remove("active","answered");
+
+   if(i===currentQuestionIndex){
+     box.classList.add("active");
+     box.scrollIntoView({
+       behavior: "smooth",
+       inline: "center",
+       block: "nearest"
+     });
+   }
+
+   if(userAnswers[i]!==null){
+     box.classList.add("answered");
+   }
  });
- document.getElementById("questions").innerHTML=html;
+}
+
+function startTimer(){
+ timerInterval=setInterval(()=>{
+   timeLeft--;
+   let m=Math.floor(timeLeft/60);
+   let s=timeLeft%60;
+   if(s<10) s="0"+s;
+   document.getElementById("timer").innerText="⏳ Time Left: "+m+":"+s;
+   if(timeLeft<=0){
+     submitTest();
+   }
+ },1000);
+}
+
+function renderQuestion(){
+ let q=questions[currentQuestionIndex];
+ document.getElementById("questions").innerHTML=`
+ <div class="card">
+ <p><b>Q${currentQuestionIndex+1} of ${questions.length}:</b> ${q.question}</p>
+ ${createOption(q.option1,"Option1")}
+ ${createOption(q.option2,"Option2")}
+ ${createOption(q.option3,"Option3")}
+ ${createOption(q.option4,"Option4")}
+ </div>`;
+ updateButtons();
+ updateNumberPanel();
+}
+
+function createOption(text,value){
+ let checked=userAnswers[currentQuestionIndex]===value?"checked":"";
+ return `
+ <label class="option-label">
+ <input type="radio" name="question${currentQuestionIndex}" value="${value}" ${checked}
+ onchange="saveAnswer('${value}')">
+ ${text}
+ </label>`;
+}
+
+function saveAnswer(value){
+ userAnswers[currentQuestionIndex]=value;
+ updateNumberPanel();
+}
+
+function nextQuestion(){
+ if(currentQuestionIndex<questions.length-1){
+ currentQuestionIndex++;
+ renderQuestion();
+ }
+}
+
+function previousQuestion(){
+ if(currentQuestionIndex>0){
+ currentQuestionIndex--;
+ renderQuestion();
+ }
+}
+
+function updateButtons(){
+ document.getElementById("prevBtn").disabled=currentQuestionIndex===0;
+ document.getElementById("nextBtn").disabled=currentQuestionIndex===questions.length-1;
+ document.getElementById("submitSection").style.display=
+ currentQuestionIndex===questions.length-1?"block":"none";
 }
 
 function submitTest(){
+
+ testActive=false;
+ clearInterval(timerInterval);
+
  let correct=0;
  questions.forEach((q,i)=>{
-   const selected=document.querySelector(`input[name="q${i}"]:checked`);
-   if(selected && selected.value===q.correctoption) correct++;
+   if(userAnswers[i]===q.correctoption) correct++;
  });
- document.getElementById("result").innerText=
- `Score: ${correct}/${questions.length}`;
-}
-</script>
 
+ let wrong=questions.length-correct;
+ let percentage=Math.round((correct/questions.length)*100);
+
+ // ✅ NEW PERFORMANCE STATUS LOGIC (ONLY ADDED FEATURE)
+ let performanceStatus="";
+ if(percentage>=75){
+   performanceStatus="Good";
+ }
+ else if(percentage>=50){
+   performanceStatus="Average";
+ }
+ else if(percentage>=30){
+   performanceStatus="Poor";
+ }
+ else{
+   performanceStatus="Try Again";
+ }
+
+ document.getElementById("questions").innerHTML="";
+ document.getElementById("navigation").style.display="none";
+ document.getElementById("submitSection").style.display="none";
+ document.getElementById("numberPanel").style.display="none";
+ document.getElementById("timer").innerHTML="";
+
+ document.getElementById("dashboard").innerHTML=`
+ <div class="dashboard" id="resultBox">
+ <h2>📊 Logical Reasoning Result</h2>
+ <p><b>Name:</b> ${studentName}</p>
+ <p><b>Roll No:</b> ${rollNumber}</p>
+ <p><b>Total Questions:</b> ${questions.length}</p>
+ <p><b>Correct Answers:</b> ${correct}</p>
+ <p><b>Wrong Answers:</b> ${wrong}</p>
+ <p><b>Percentage:</b> ${percentage}%</p>
+ <p><b>Performance:</b> ${performanceStatus}</p>
+
+ <div class="chart-container">
+   <canvas id="resultChart"></canvas>
+ </div>
+
+ <div class="watermark">
+   Generated by - Cognitive Analytics Engine for Aptitude Evaluation
+   <strong>Developed by - V.Akilan</strong>
+   B.Sc.Computer Science(SF), KASC, BATCH : 2023 - 2026
+ </div>
+
+ </div>
+
+ <button id="downloadBtn" onclick="downloadPDF()">Download PDF</button>
+ `;
+
+ createChart(correct,wrong);
+}
+
+function createChart(correct,wrong){
+ const ctx=document.getElementById('resultChart').getContext('2d');
+ if(resultChart) resultChart.destroy();
+ resultChart=new Chart(ctx,{
+   type:'pie',
+   data:{
+     labels:['Correct','Wrong'],
+     datasets:[{
+       data:[correct,wrong],
+       backgroundColor:['#00ff99','#ff4444']
+     }]
+   }
+ });
+}
+
+function downloadPDF(){
+
+ const element = document.getElementById("resultBox");
+ const button = document.getElementById("downloadBtn");
+
+ button.style.display="none";
+
+ const fileName = studentName + "_Logical_Reasoning_Result.pdf";
+
+ const opt = {
+   margin: [10,10,10,10],
+   filename: fileName,
+   image: { type: 'jpeg', quality: 1 },
+   html2canvas: {
+     scale: 2,
+     useCORS: true,
+     backgroundColor: "#000000"
+   },
+   jsPDF: {
+     unit: 'mm',
+     format: 'a4',
+     orientation: 'portrait'
+   }
+ };
+
+ html2pdf().set(opt).from(element).save().then(()=>{
+   button.style.display="inline-block";
+ });
+}
+
+</script>
 </body>
 </html>
