@@ -44,13 +44,14 @@ button:disabled{background:#555;}
 </head>
 <body>
 
-<!-- START PAGE -->
 <div id="startPage" class="start-center">
 <div>
 <h1>🧠 Aptitude Test</h1>
 
 <input type="text" id="name" placeholder="Enter Student Name"><br>
-<input type="text" id="rollno" placeholder="Enter Roll Number"><br>
+
+<!-- UPDATED INPUT -->
+<input type="text" id="rollno" maxlength="8" placeholder="Enter Roll Number (eg:231sc012)" oninput="formatRollNo(this)"><br>
 
 <h2>📝 Select a Test</h2>
 
@@ -68,9 +69,7 @@ button:disabled{background:#555;}
 <div class="container">
 
 <div id="timer"></div>
-
 <div id="numberPanel" class="number-panel" style="display:none;"></div>
-
 <div id="questions"></div>
 
 <div id="navigation" class="navigation" style="display:none;">
@@ -100,8 +99,13 @@ const supabaseClient=supabase.createClient(supabaseUrl,supabaseKey);
 let selectedTest="", questions=[], userAnswers=[], currentIndex=0, timeLeft=0, timerInterval=null;
 let studentName="", rollNumber="", stream=null, motionInterval=null, violationCount=0;
 let resultChart=null, testActive=false;
-
 let movementBuffer=0;
+
+function formatRollNo(input){
+let value=input.value.toLowerCase();
+value=value.replace(/[^a-z0-9]/g,'');
+input.value=value;
+}
 
 function selectTest(card){
 document.querySelectorAll('.test-card').forEach(c=>c.classList.remove('selected'));
@@ -114,8 +118,16 @@ async function startTest(){
 studentName=document.getElementById("name").value.trim();
 rollNumber=document.getElementById("rollno").value.trim();
 
+const rollPattern=/^[0-9]{3}[a-z]{2}[0-9]{3}$/;
+
 if(!studentName){alert("Enter Name");return;}
 if(!rollNumber){alert("Enter Roll Number");return;}
+
+if(!rollPattern.test(rollNumber)){
+alert("Roll Number must be in format like 231sc012");
+return;
+}
+
 if(!selectedTest){alert("Select a Test");return;}
 
 document.body.classList.add("no-select");
@@ -216,9 +228,8 @@ await video.play();
 
 document.getElementById("proctorBox").style.display="block";
 
-const canvas = document.createElement("canvas");
-const ctx = canvas.getContext("2d");
-
+const canvas=document.createElement("canvas");
+const ctx=canvas.getContext("2d");
 let previousFrame=null;
 
 motionInterval=setInterval(()=>{
@@ -256,25 +267,16 @@ movementPixels++;
 let avgDiff=diff/pixels;
 let motionPercent=(movementPixels/pixels)*100;
 
-if(avgDiff>60 || motionPercent>15){
-
+if(avgDiff>60||motionPercent>15){
 movementBuffer++;
-
 }else{
-
 movementBuffer=0;
-
 }
 
 if(movementBuffer>=3){
-
 violationCount++;
-
-document.getElementById("proctorWarning").innerText=
-"⚠ Movement detected ("+violationCount+")";
-
+document.getElementById("proctorWarning").innerText="⚠ Movement detected ("+violationCount+")";
 movementBuffer=0;
-
 }
 
 }
@@ -300,7 +302,7 @@ clearInterval(motionInterval);
 }
 
 document.addEventListener("visibilitychange",function(){
-if(document.hidden && testActive){
+if(document.hidden&&testActive){
 alert("Tab changed! Auto submitting.");
 submitTest();
 }
